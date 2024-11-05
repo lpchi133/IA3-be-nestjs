@@ -12,6 +12,14 @@
         "dest": "src/main.ts",
         "methods": ["GET", "POST", "PUT", "DELETE"]
       }
-    ]
+    ],
+    "hooks": {
+    "build": {
+      "commands": [
+        "npm run build",
+        "npx prisma generate"
+      ]
+    }
+  }
   }
   
