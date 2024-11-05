@@ -1,3 +1,4 @@
+// src/user/user.service.ts
 import {
   Injectable,
   BadRequestException,
@@ -10,19 +11,19 @@ import * as bcrypt from 'bcrypt';
 export class UserService {
   constructor(private prisma: PrismaService) {}
 
-  // Register a new user with unique email and username
+  // Đăng ký người dùng mới với email và username duy nhất
   async register(data: { username: string; email: string; password: string }) {
-    // Check if user with the same email or username already exists
+    // Kiểm tra xem người dùng với email hoặc username đã tồn tại chưa
     const existingUser = await this.prisma.user.findFirst({
       where: { OR: [{ email: data.email }, { username: data.username }] },
     });
 
     if (existingUser) {
-      // Throw error if username or email is taken
+      // Ném lỗi nếu username hoặc email đã được sử dụng
       throw new BadRequestException('Username or email already exists');
     }
 
-    // Hash the password for secure storage
+    // Băm mật khẩu để lưu trữ an toàn
     const hashedPassword = await bcrypt.hash(data.password, 10);
     const user = await this.prisma.user.create({
       data: {
@@ -32,30 +33,34 @@ export class UserService {
       },
     });
 
-    // Return a success message with the user ID
+    // Trả về thông báo thành công với ID của người dùng
     return { message: 'User registered successfully', userId: user.id };
   }
 
-  // Log in an existing user by verifying username and password
+  // Đăng nhập người dùng hiện có bằng cách xác thực username và password
   async login(data: { username: string; password: string }) {
-    // Find the user by username
+    // Tìm người dùng theo username
     const user = await this.prisma.user.findUnique({
       where: { username: data.username },
     });
 
     if (!user) {
-      // Throw error if the username does not exist
+      // Ném lỗi nếu username không tồn tại
       throw new UnauthorizedException('Invalid username');
     }
 
-    // Compare provided password with stored hashed password
+    // So sánh mật khẩu đã cung cấp với mật khẩu đã băm được lưu trữ
     const isPasswordValid = await bcrypt.compare(data.password, user.password);
     if (!isPasswordValid) {
-      // Throw error if the password is incorrect
+      // Ném lỗi nếu mật khẩu không chính xác
       throw new UnauthorizedException('Invalid password');
     }
 
-    // Return a success message with the user ID
-    return { message: 'Login successful', userId: user.id };
+    // Trả về thông tin người dùng (không bao gồm mật khẩu)
+    const userInfo = {
+      username: user.username,
+      email: user.email,
+    };
+    return { message: 'Login successful', user: userInfo }; // Trả về thông tin người dùng
   }
 }
